@@ -74,41 +74,77 @@ input,select{
 
 <div class="container">
 
-  <!-- HABITS -->
-  <div id="habits" class="section active">
-    <div class="panel">
-      <div id="habitList"></div>
-      <button class="btn" onclick="openHabit()">+ Add Habit</button>
-    </div>
+<!-- HABITS -->
+<div id="habits" class="section active">
+  <div class="panel">
+    <div id="habitList"></div>
+    <button class="btn" onclick="openHabit()">+ Add Habit</button>
   </div>
+</div>
 
-  <div id="mega" class="section"><div class="panel">Next step</div></div>
-  <div id="economy" class="section"><div class="panel">Next step</div></div>
-  <div id="analytics" class="section"><div class="panel">Next step</div></div>
-
-  <!-- SETTINGS -->
-  <div id="settings" class="section">
-    <div class="panel">
-      <div class="meta">Theme</div>
-      <select onchange="setTheme(this.value)">
-        <option value="demonic">Demonic</option>
-        <option value="emerald">Emerald</option>
-        <option value="ocean">Ocean</option>
-      </select>
-    </div>
-    <div class="panel">
-      <button class="btn secondary" onclick="logout()">Logout</button>
-    </div>
+<!-- MEGA -->
+<div id="mega" class="section">
+  <div class="panel">
+    <div id="megaList"></div>
+    <button class="btn" onclick="openMega()">+ Add Mega</button>
   </div>
+</div>
+
+<!-- ECONOMY -->
+<div id="economy" class="section">
+  <div class="panel">
+    <button class="btn" onclick="openSpend()">Spend Coins</button>
+  </div>
+  <div class="panel">
+    <div class="meta">Spend History</div>
+    <div id="spendList"></div>
+  </div>
+</div>
+
+<!-- ANALYTICS -->
+<div id="analytics" class="section">
+  <div class="panel">Next step</div>
+</div>
+
+<!-- SETTINGS -->
+<div id="settings" class="section">
+  <div class="panel">
+    <div class="meta">Theme</div>
+    <select onchange="setTheme(this.value)">
+      <option value="demonic">Demonic</option>
+      <option value="emerald">Emerald</option>
+      <option value="ocean">Ocean</option>
+    </select>
+  </div>
+  <div class="panel">
+    <button class="btn secondary" onclick="logout()">Logout</button>
+  </div>
+</div>
 
 </div>
 
-<!-- ADD HABIT MODAL -->
+<!-- MODALS -->
 <div class="modal" id="habitModal">
   <div class="panel">
     <input id="habitName" placeholder="Habit name">
     <input id="habitTime" placeholder="Time window">
     <button class="btn" onclick="addHabit()">Add</button>
+  </div>
+</div>
+
+<div class="modal" id="megaModal">
+  <div class="panel">
+    <input id="megaTitle" placeholder="Mega title">
+    <input id="megaReward" type="number" placeholder="Coin reward">
+    <button class="btn" onclick="addMega()">Add</button>
+  </div>
+</div>
+
+<div class="modal" id="spendModal">
+  <div class="panel">
+    <input id="spendAmount" type="number" placeholder="Coins to spend">
+    <input id="spendReason" placeholder="Reason">
+    <button class="btn" onclick="spendCoins()">Confirm</button>
   </div>
 </div>
 
@@ -155,10 +191,10 @@ async function setTheme(name){
 /* ===== AUTH ===== */
 auth.onAuthStateChanged(async user=>{
   if(!user){ location.reload(); return; }
-  userRef = db.collection("users").doc(user.uid);
-  const snap = await userRef.get();
-  data = snap.data();
-  applyTheme(data.theme || "demonic");
+  userRef=db.collection("users").doc(user.uid);
+  const snap=await userRef.get();
+  data=snap.data();
+  applyTheme(data.theme||"demonic");
   dailyReset();
   render();
 });
@@ -172,85 +208,101 @@ function showTab(id){
 }
 
 /* ===== HABITS ===== */
-function openHabit(){ habitModal.style.display="flex" }
-
+function openHabit(){habitModal.style.display="flex"}
 async function addHabit(){
   if(!habitName.value.trim())return;
   data.habits.push({
-    name:habitName.value,
-    time:habitTime.value,
-    streak:0,
-    lastCompleted:null,
-    done:false,
-    missed:false
+    name:habitName.value,time:habitTime.value,
+    streak:0,lastCompleted:null,done:false,missed:false
   });
   habitName.value=habitTime.value="";
   habitModal.style.display="none";
-  await save();
-  render();
+  await save();render();
 }
-
 async function toggleHabit(i){
   const h=data.habits[i];
   if(h.done)return;
+  const today=new Date().toDateString();
+  const y=new Date(Date.now()-86400000).toDateString();
+  h.streak=(h.lastCompleted===y)?h.streak+1:1;
+  h.lastCompleted=today;h.done=true;h.missed=false;
+  data.coins+=1;
+  await save();render();
+}
 
-  const today = new Date().toDateString();
-  const yesterday = new Date(Date.now()-86400000).toDateString();
+/* ===== MEGA ===== */
+function openMega(){megaModal.style.display="flex"}
+async function addMega(){
+  if(!megaTitle.value||!megaReward.value)return;
+  data.mega.push({title:megaTitle.value,reward:+megaReward.value,done:false});
+  megaTitle.value=megaReward.value="";
+  megaModal.style.display="none";
+  await save();render();
+}
+async function completeMega(i){
+  const m=data.mega[i];
+  if(m.done)return;
+  m.done=true;
+  data.coins+=m.reward;
+  await save();render();
+}
 
-  if(h.lastCompleted === yesterday){
-    h.streak += 1;
-  } else {
-    h.streak = 1;
-  }
-
-  h.lastCompleted = today;
-  h.done = true;
-  h.missed = false;
-
-  data.coins += 1;
-  await save();
-  render();
+/* ===== SPEND ===== */
+function openSpend(){spendModal.style.display="flex"}
+async function spendCoins(){
+  const a=+spendAmount.value;
+  if(a<=0||a>data.coins)return;
+  data.coins-=a;
+  data.spend.unshift({amount:a,reason:spendReason.value,date:new Date().toLocaleString()});
+  spendAmount.value=spendReason.value="";
+  spendModal.style.display="none";
+  await save();render();
 }
 
 /* ===== DAILY RESET ===== */
 function dailyReset(){
-  if(data.lastDate !== TODAY){
-    data.habits.forEach(h=>{
-      if(!h.done){ h.missed=true; }
-      h.done=false;
-    });
-    data.lastDate = TODAY;
-    save();
+  if(data.lastDate!==TODAY){
+    data.habits.forEach(h=>{if(!h.done)h.missed=true;h.done=false});
+    data.lastDate=TODAY;save();
   }
 }
 
 /* ===== SAVE ===== */
 async function save(){
-  await userRef.update({
-    habits:data.habits,
-    coins:data.coins,
-    lastDate:data.lastDate,
-    theme:data.theme || "demonic"
-  });
+  await userRef.update(data);
 }
 
 /* ===== RENDER ===== */
 function render(){
   coins.textContent="Coins: "+data.coins;
+
   habitList.innerHTML="";
   data.habits.forEach((h,i)=>{
     habitList.innerHTML+=`
-      <div class="row ${h.missed?"missed":""}">
-        <div>${h.name}
-          <div class="meta">${h.time} · Streak: ${h.streak}d</div>
-        </div>
-        <div class="check ${h.done?"done":""}" onclick="toggleHabit(${i})"></div>
-      </div>`;
+    <div class="row ${h.missed?"missed":""}">
+      <div>${h.name}
+        <div class="meta">${h.time} · Streak: ${h.streak}d</div>
+      </div>
+      <div class="check ${h.done?"done":""}" onclick="toggleHabit(${i})"></div>
+    </div>`;
   });
+
+  megaList.innerHTML="";
+  data.mega.forEach((m,i)=>{
+    megaList.innerHTML+=`
+    <div class="row ${m.done?"missed":""}">
+      <div>${m.title}<div class="meta">${m.reward} coins</div></div>
+      <div class="check ${m.done?"done":""}" onclick="completeMega(${i})"></div>
+    </div>`;
+  });
+
+  spendList.innerHTML=data.spend.map(
+    s=>`−${s.amount} (${s.reason}) <span class="meta">${s.date}</span>`
+  ).join("<br>");
 }
 
 /* ===== LOGOUT ===== */
-function logout(){ auth.signOut(); }
+function logout(){auth.signOut()}
 </script>
 
 </body>
