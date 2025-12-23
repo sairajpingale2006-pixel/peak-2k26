@@ -36,6 +36,14 @@ h1{margin:0;font-size:16px;letter-spacing:1px}
 .check{width:22px;height:22px;border:2px solid var(--muted);cursor:pointer}
 .check.done{background:var(--accent);border-color:var(--accent)}
 
+.delete{
+  margin-left:12px;
+  color:#777;
+  cursor:pointer;
+  font-size:14px;
+}
+.delete:hover{color:#b30000}
+
 .btn{padding:8px 14px;background:var(--accent-dark);border:none;color:#fff;cursor:pointer;font-size:13px}
 .btn.secondary{background:#333}
 
@@ -53,18 +61,18 @@ input,select{
   grid-template-columns:repeat(7,1fr);
   gap:6px;
 }
-.cell{
-  height:26px;
-  background:#222;
-}
+.cell{height:26px;background:#222}
 .cell.fail{background:#b30000}
 .cell.ok{background:#2b6f8c}
 
-.ai{
-  font-size:14px;
-  line-height:1.4;
-}
+.ai{font-size:14px;line-height:1.4}
 .ai strong{color:var(--accent)}
+
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);
+  display:none;align-items:center;justify-content:center
+}
+.modal .panel{width:320px}
 </style>
 </head>
 
@@ -118,12 +126,10 @@ input,select{
     <div class="meta">Weekly Summary</div>
     <div id="weeklySummary"></div>
   </div>
-
   <div class="panel">
     <div class="meta">Failure Heatmap (Last 7 Days)</div>
     <div class="grid" id="heatmap"></div>
   </div>
-
   <div class="panel ai" id="aiPanel"></div>
 </div>
 
@@ -169,7 +175,6 @@ input,select{
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <script>
-/* === FIREBASE INIT (unchanged) === */
 const firebaseConfig = {
   apiKey: "AIzaSyCv1tDAxtNMiI2otPWNmnlIgatzR2VxuyU",
   authDomain: "peak-2k26-web.firebaseapp.com",
@@ -178,6 +183,7 @@ const firebaseConfig = {
   messagingSenderId: "1006854372406",
   appId: "1:1006854372406:web:3acb7885e6dddc8065ac97"
 };
+
 firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth();
 const db=firebase.firestore();
@@ -185,7 +191,7 @@ const db=firebase.firestore();
 let userRef,data;
 const TODAY=new Date().toDateString();
 
-/* === THEMES === */
+/* THEMES */
 const THEMES={
   demonic:{bg:"#0b0b0b",accent:"#b30000",dark:"#700000"},
   emerald:{bg:"#07110b",accent:"#00b36b",dark:"#007a4a"},
@@ -196,13 +202,13 @@ function applyTheme(n){
   document.documentElement.style.setProperty("--bg",t.bg);
   document.documentElement.style.setProperty("--accent",t.accent);
   document.documentElement.style.setProperty("--accent-dark",t.dark);
- 인정}
+}
 async function setTheme(n){
   applyTheme(n);
   if(userRef){await userRef.update({theme:n});data.theme=n;}
 }
 
-/* === AUTH === */
+/* AUTH */
 auth.onAuthStateChanged(async u=>{
   if(!u){location.reload();return;}
   userRef=db.collection("users").doc(u.uid);
@@ -213,7 +219,7 @@ auth.onAuthStateChanged(async u=>{
   renderAll();
 });
 
-/* === UI === */
+/* UI */
 function showTab(id){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
@@ -221,11 +227,8 @@ function showTab(id){
   document.getElementById(id).classList.add("active");
 }
 
-/* === HABITS / MEGA / SPEND (unchanged logic) === */
+/* HABITS */
 function openHabit(){habitModal.style.display="flex"}
-function openMega(){megaModal.style.display="flex"}
-function openSpend(){spendModal.style.display="flex"}
-
 async function addHabit(){
   if(!habitName.value)return;
   data.habits.push({name:habitName.value,time:habitTime.value,streak:0,lastCompleted:null,done:false,missed:false});
@@ -242,7 +245,14 @@ async function toggleHabit(i){
   data.coins++;
   await save();renderAll();
 }
+async function deleteHabit(i){
+  if(!data.habits[i].done)return;
+  data.habits.splice(i,1);
+  await save();renderAll();
+}
 
+/* MEGA */
+function openMega(){megaModal.style.display="flex"}
 async function addMega(){
   if(!megaTitle.value||!megaReward.value)return;
   data.mega.push({title:megaTitle.value,reward:+megaReward.value,done:false});
@@ -256,7 +266,14 @@ async function completeMega(i){
   m.done=true;data.coins+=m.reward;
   await save();renderAll();
 }
+async function deleteMega(i){
+  if(!data.mega[i].done)return;
+  data.mega.splice(i,1);
+  await save();renderAll();
+}
 
+/* SPEND */
+function openSpend(){spendModal.style.display="flex"}
 async function spendCoins(){
   const a=+spendAmount.value;
   if(a<=0||a>data.coins)return;
@@ -267,7 +284,7 @@ async function spendCoins(){
   await save();renderAll();
 }
 
-/* === ANALYTICS + AI === */
+/* ANALYTICS + AI */
 function analytics(){
   const total=data.habits.length;
   const done=data.habits.filter(h=>h.done).length;
@@ -276,8 +293,7 @@ function analytics(){
 
   heatmap.innerHTML="";
   for(let i=0;i<7;i++){
-    const fail=i>=done;
-    heatmap.innerHTML+=`<div class="cell ${fail?"fail":"ok"}"></div>`;
+    heatmap.innerHTML+=`<div class="cell ${i<done?"ok":"fail"}"></div>`;
   }
 
   let msg="You’re stable.";
@@ -288,7 +304,7 @@ function analytics(){
   aiPanel.innerHTML=msg;
 }
 
-/* === RESET / SAVE / RENDER === */
+/* RESET / SAVE / RENDER */
 function dailyReset(){
   if(data.lastDate!==TODAY){
     data.habits.forEach(h=>{if(!h.done)h.missed=true;h.done=false});
@@ -305,7 +321,10 @@ function renderAll(){
     habitList.innerHTML+=`
     <div class="row ${h.missed?"missed":""}">
       <div>${h.name}<div class="meta">${h.time} · Streak ${h.streak}d</div></div>
-      <div class="check ${h.done?"done":""}" onclick="toggleHabit(${i})"></div>
+      <div style="display:flex;align-items:center">
+        <div class="check ${h.done?"done":""}" onclick="toggleHabit(${i})"></div>
+        ${h.done?`<span class="delete" onclick="deleteHabit(${i})">✕</span>`:""}
+      </div>
     </div>`;
   });
 
@@ -314,7 +333,10 @@ function renderAll(){
     megaList.innerHTML+=`
     <div class="row ${m.done?"missed":""}">
       <div>${m.title}<div class="meta">${m.reward} coins</div></div>
-      <div class="check ${m.done?"done":""}" onclick="completeMega(${i})"></div>
+      <div style="display:flex;align-items:center">
+        <div class="check ${m.done?"done":""}" onclick="completeMega(${i})"></div>
+        ${m.done?`<span class="delete" onclick="deleteMega(${i})">✕</span>`:""}
+      </div>
     </div>`;
   });
 
