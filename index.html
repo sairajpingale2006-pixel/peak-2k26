@@ -15,19 +15,96 @@
 }
 *{box-sizing:border-box;font-family:system-ui,sans-serif}
 body{margin:0;background:var(--bg);color:var(--text)}
-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #1a1a1a}
+
+header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 20px;border-bottom:1px solid #1a1a1a
+}
 h1{margin:0;font-size:18px;letter-spacing:1px}
 #coins{color:var(--accent);font-size:14px}
-.container{padding:20px;max-width:1000px;margin:auto}
-.section-title{margin-top:30px;font-size:13px;letter-spacing:1px;color:var(--muted)}
-.ai{border-left:3px solid var(--accent);padding:10px;margin:15px 0;font-size:13px}
-.row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1a1a1a}
-.row.missed{opacity:.6}
+
+.container{padding:20px;max-width:900px;margin:auto}
+
+.section-title{
+  margin-top:30px;
+  font-size:13px;
+  letter-spacing:1px;
+  color:var(--muted)
+}
+
+.ai{
+  border-left:3px solid var(--accent);
+  padding:10px;
+  margin:15px 0;
+  font-size:13px
+}
+
+.row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 0;border-bottom:1px solid #1a1a1a
+}
+.row.missed{opacity:.5}
+
 .meta{font-size:12px;color:var(--muted)}
-.check{width:22px;height:22px;border:2px solid var(--muted);cursor:pointer}
+
+.check{
+  width:22px;height:22px;
+  border:2px solid var(--muted);
+  cursor:pointer
+}
 .check.done{background:var(--accent);border-color:var(--accent)}
-.btn{margin-top:15px;font-size:13px;color:var(--accent);cursor:pointer}
-.log{font-size:12px;color:var(--muted);margin-top:10px}
+
+.btn{
+  margin-top:12px;
+  font-size:13px;
+  color:var(--accent);
+  cursor:pointer;
+  display:inline-block
+}
+
+.modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.85);
+  display:none;
+  align-items:center;
+  justify-content:center
+}
+.modal-content{
+  background:#111;
+  padding:20px;
+  width:90%;
+  max-width:420px;
+  border:1px solid #222
+}
+.modal-content input{
+  width:100%;
+  padding:8px;
+  margin-bottom:10px;
+  background:#000;
+  border:1px solid #333;
+  color:var(--text)
+}
+.modal-content button{
+  background:var(--accent-dark);
+  border:none;
+  padding:8px 14px;
+  color:#fff;
+  cursor:pointer
+}
+
+/* Heatmap */
+.heatmap{
+  display:grid;
+  grid-template-columns:repeat(24,1fr);
+  gap:2px;
+  margin-top:10px
+}
+.cell{height:14px;background:#111}
+.cell[l="1"]{background:#330000}
+.cell[l="2"]{background:#550000}
+.cell[l="3"]{background:#770000}
+.cell[l="4"]{background:#990000}
+.cell[l="5"]{background:#b30000}
 </style>
 </head>
 
@@ -44,167 +121,93 @@ h1{margin:0;font-size:18px;letter-spacing:1px}
 
   <div class="section-title">HABITS</div>
   <div id="habitList"></div>
+  <div class="btn" onclick="openHabit()">+ Add Habit</div>
 
   <div class="section-title">MEGA ACTIVITIES</div>
   <div id="megaList"></div>
+  <div class="btn" onclick="openMega()">+ Add Mega</div>
 
   <div class="section-title">WEEKLY COMPARISON</div>
   <div id="compareBox" class="ai"></div>
 
   <div class="section-title">FAILURE HEATMAP</div>
-  <div id="heatmap"></div>
+  <div id="heatmap" class="heatmap"></div>
 
   <div class="section-title">SPENDING</div>
-  <div id="spendLog" class="log"></div>
+  <div class="btn" onclick="openSpend()">− Spend Coins</div>
+  <div id="spendLog" class="meta"></div>
 
 </div>
 
-<script>
-/* =========================
-   DATA MODEL
-========================= */
-const DAY = 24*60*60*1000;
-const TODAY = new Date().toDateString();
+<!-- MODALS -->
+<div class="modal" id="habitModal">
+  <div class="modal-content">
+    <input id="habitName" placeholder="Habit name">
+    <input id="habitTime" placeholder="Time window">
+    <button onclick="addHabit()">Add</button>
+  </div>
+</div>
 
+<div class="modal" id="megaModal">
+  <div class="modal-content">
+    <input id="megaTitle" placeholder="Mega title">
+    <input id="megaReward" type="number" placeholder="Coin reward">
+    <button onclick="addMega()">Add</button>
+  </div>
+</div>
+
+<div class="modal" id="spendModal">
+  <div class="modal-content">
+    <input id="spendAmount" type="number" placeholder="Coins">
+    <input id="spendReason" placeholder="Reason">
+    <button onclick="spendCoins()">Confirm</button>
+  </div>
+</div>
+
+<script>
+/* ===== DATA ===== */
+const TODAY = new Date().toDateString();
 let data = JSON.parse(localStorage.getItem("peakData")) || {
   coins:0,
   lastDate:TODAY,
   habits:[],
   mega:[],
-  spendHistory:[],
+  spend:[],
   heatmap:{},
-  dailyLog:[],      // {date, completed, coins}
-  compareHistory:[] // timestamps
+  daily:[]
 };
+const save=()=>localStorage.setItem("peakData",JSON.stringify(data));
 
-function save(){localStorage.setItem("peakData",JSON.stringify(data))}
-
-/* =========================
-   DAILY RESET + LOG
-========================= */
+/* ===== DAILY RESET ===== */
 function dailyReset(){
-  if(data.lastDate !== TODAY){
-    const completed = data.habits.filter(h=>h.done).length;
-    data.dailyLog.push({
-      date:data.lastDate,
-      completed,
-      coins:data.coins
-    });
-
+  if(data.lastDate!==TODAY){
     const now=new Date();
-    const day=(now.getDay()+6)%7;
-    const hour=now.getHours();
+    const d=(now.getDay()+6)%7;
+    const h=now.getHours();
 
-    data.habits.forEach(h=>{
-      if(!h.done){
-        const key=`${day}-${hour}`;
-        data.heatmap[key]=(data.heatmap[key]||0)+1;
-        h.streak=0;
-        h.missed=true;
+    data.habits.forEach(x=>{
+      if(!x.done){
+        const k=`${d}-${h}`;
+        data.heatmap[k]=(data.heatmap[k]||0)+1;
+        x.streak=0;
+        x.missed=true;
       }
-      h.done=false;
+      x.done=false;
     });
-
-    data.lastDate = TODAY;
+    data.lastDate=TODAY;
   }
 }
 
-/* =========================
-   WEEKLY COMPARISON
-========================= */
-function weeklyCompare(){
-  if(data.compareHistory.includes(TODAY)) return;
-
-  const last7 = data.dailyLog.slice(-7);
-  const prev7 = data.dailyLog.slice(-14,-7);
-
-  if(last7.length < 7 || prev7.length < 7) return;
-
-  const sum = arr => arr.reduce((a,b)=>a+b.completed,0);
-  const c1 = sum(last7);
-  const c2 = sum(prev7);
-
-  let verdict;
-  if(c1 > c2) verdict = "You improved. Barely acceptable.";
-  else if(c1 < c2) verdict = "You regressed. Own it.";
-  else verdict = "No progress. You stagnated.";
-
-  compareBox.innerHTML =
-    `This week: ${c1} actions<br>Last week: ${c2}<br>${verdict}`;
-
-  data.compareHistory.push(TODAY);
-}
-
-/* =========================
-   HEATMAP
-========================= */
-function renderHeatmap(){
-  heatmap.innerHTML="";
-  heatmap.style.display="grid";
-  heatmap.style.gridTemplateColumns="repeat(24,1fr)";
-  heatmap.style.gap="2px";
-
-  for(let d=0;d<7;d++){
-    for(let h=0;h<24;h++){
-      const key=`${d}-${h}`;
-      const v=data.heatmap[key]||0;
-      const lvl=Math.min(v,5);
-      const cell=document.createElement("div");
-      cell.style.height="14px";
-      cell.style.background=[
-        "#111","#330000","#550000","#770000","#990000","#b30000"
-      ][lvl];
-      heatmap.appendChild(cell);
-    }
-  }
-}
-
-/* =========================
-   AI (SIMPLE)
-========================= */
+/* ===== AI ===== */
 function runAI(){
   const hour=new Date().getHours();
   const done=data.habits.filter(h=>h.done).length;
-  if(done===0 && hour>=21){
-    aiBox.innerHTML=`<div class="ai">Today produced nothing.</div>`;
-  } else aiBox.innerHTML="";
+  aiBox.innerHTML = (done===0 && hour>=21)
+    ? `<div class="ai">Today produced nothing.</div>`
+    : "";
 }
 
-/* =========================
-   UI
-========================= */
-function render(){
-  dailyReset();
-
-  habitList.innerHTML="";
-  data.habits.forEach((h,i)=>{
-    habitList.innerHTML+=`
-      <div class="row ${h.missed?"missed":""}">
-        <div>${h.name}<div class="meta">${h.streak||0}d</div></div>
-        <div class="check ${h.done?"done":""}" onclick="toggleHabit(${i})"></div>
-      </div>`;
-  });
-
-  megaList.innerHTML="";
-  data.mega.forEach(m=>{
-    megaList.innerHTML+=`
-      <div class="row ${m.done?"missed":""}">
-        <div>${m.title}<div class="meta">${m.reward} coins</div></div>
-        <div class="check ${m.done?"done":""}"></div>
-      </div>`;
-  });
-
-  spendLog.innerHTML=data.spendHistory.slice(-5).reverse()
-    .map(s=>`−${s.amount} (${s.reason})`).join("<br>");
-
-  coins.textContent=`Coins: ${data.coins}`;
-
-  runAI();
-  weeklyCompare();
-  renderHeatmap();
-  save();
-}
-
+/* ===== HABITS ===== */
 function toggleHabit(i){
   const h=data.habits[i];
   if(h.done)return;
@@ -213,6 +216,90 @@ function toggleHabit(i){
   h.streak++;
   data.coins++;
   render();
+}
+function addHabit(){
+  if(!habitName.value.trim())return;
+  data.habits.push({
+    name:habitName.value,
+    time:habitTime.value,
+    streak:0,done:false,missed:false
+  });
+  habitName.value=habitTime.value="";
+  habitModal.style.display="none";
+  render();
+}
+
+/* ===== MEGA ===== */
+function addMega(){
+  if(!megaTitle.value||!megaReward.value)return;
+  data.mega.push({title:megaTitle.value,reward:+megaReward.value,done:false});
+  megaTitle.value=megaReward.value="";
+  megaModal.style.display="none";
+  render();
+}
+function completeMega(i){
+  const m=data.mega[i];
+  if(m.done)return;
+  m.done=true;
+  data.coins+=m.reward;
+  render();
+}
+
+/* ===== SPEND ===== */
+function spendCoins(){
+  const a=+spendAmount.value;
+  if(a<=0||a>data.coins)return;
+  data.coins-=a;
+  data.spend.push({a,reason:spendReason.value});
+  spendAmount.value=spendReason.value="";
+  spendModal.style.display="none";
+  render();
+}
+
+/* ===== UI ===== */
+function openHabit(){habitModal.style.display="flex"}
+function openMega(){megaModal.style.display="flex"}
+function openSpend(){spendModal.style.display="flex"}
+
+function renderHeatmap(){
+  heatmap.innerHTML="";
+  for(let d=0;d<7;d++){
+    for(let h=0;h<24;h++){
+      const k=`${d}-${h}`;
+      const v=Math.min(data.heatmap[k]||0,5);
+      heatmap.innerHTML+=`<div class="cell" l="${v}"></div>`;
+    }
+  }
+}
+
+function render(){
+  dailyReset();
+
+  habitList.innerHTML="";
+  data.habits.forEach((h,i)=>{
+    habitList.innerHTML+=`
+      <div class="row ${h.missed?"missed":""}">
+        <div>${h.name}<div class="meta">${h.time} · ${h.streak}d</div></div>
+        <div class="check ${h.done?"done":""}" onclick="toggleHabit(${i})"></div>
+      </div>`;
+  });
+
+  megaList.innerHTML="";
+  data.mega.forEach((m,i)=>{
+    megaList.innerHTML+=`
+      <div class="row ${m.done?"missed":""}">
+        <div>${m.title}<div class="meta">${m.reward} coins</div></div>
+        <div class="check ${m.done?"done":""}" onclick="completeMega(${i})"></div>
+      </div>`;
+  });
+
+  spendLog.innerHTML=data.spend.slice(-5).reverse()
+    .map(s=>`−${s.a} (${s.reason})`).join("<br>");
+
+  coins.textContent=`Coins: ${data.coins}`;
+  renderHeatmap();
+  runAI();
+  save();
 }
 
 render();
