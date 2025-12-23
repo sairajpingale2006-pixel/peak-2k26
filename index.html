@@ -3,56 +3,175 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Peak 2k26 — Cloud Test</title>
+<title>Peak 2K26</title>
 
 <style>
+/* ===== THEME VARIABLES ===== */
+:root{
+  --bg:#0b0b0b;
+  --panel:#111;
+  --border:#1f1f1f;
+  --accent:#b30000;
+  --accent-dark:#700000;
+  --text:#e6e6e6;
+  --muted:#777;
+}
+
 body{
   margin:0;
-  background:#0b0b0b;
-  color:#e6e6e6;
+  background:var(--bg);
+  color:var(--text);
   font-family:system-ui,sans-serif;
+}
+
+/* ===== HEADER ===== */
+header{
   display:flex;
+  justify-content:space-between;
   align-items:center;
-  justify-content:center;
-  height:100vh;
+  padding:14px 20px;
+  border-bottom:1px solid var(--border);
 }
-.box{
-  width:320px;
-  background:#111;
-  border:1px solid #222;
+h1{
+  margin:0;
+  font-size:16px;
+  letter-spacing:1px;
+}
+#coins{
+  color:var(--accent);
+  font-size:14px;
+}
+
+/* ===== TABS ===== */
+.tabs{
+  display:flex;
+  border-bottom:1px solid var(--border);
+}
+.tab{
+  padding:12px 16px;
+  cursor:pointer;
+  font-size:13px;
+  color:var(--muted);
+}
+.tab.active{
+  color:var(--accent);
+  border-bottom:2px solid var(--accent);
+}
+
+/* ===== CONTENT ===== */
+.container{
   padding:20px;
+  max-width:1000px;
+  margin:auto;
 }
-button{
-  width:100%;
-  padding:10px;
-  background:#b30000;
+.section{
+  display:none;
+}
+.section.active{
+  display:block;
+}
+
+/* ===== PANELS ===== */
+.panel{
+  background:var(--panel);
+  border:1px solid var(--border);
+  padding:16px;
+  margin-bottom:16px;
+}
+
+/* ===== BUTTONS ===== */
+.btn{
+  padding:8px 14px;
+  background:var(--accent-dark);
   border:none;
   color:#fff;
   cursor:pointer;
-  margin-top:10px;
+  font-size:13px;
 }
-.msg{font-size:12px;color:#aaa;margin-top:10px}
+.btn.secondary{
+  background:#333;
+}
+
+/* ===== SETTINGS ===== */
+.select{
+  width:100%;
+  padding:8px;
+  background:#000;
+  color:#fff;
+  border:1px solid #333;
+}
+.label{
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="box" id="authBox">
-  <h2>PEAK 2K26</h2>
-  <input id="email" placeholder="Email" style="width:100%;padding:8px">
-  <input id="password" type="password" placeholder="Password" style="width:100%;padding:8px;margin-top:6px">
-  <button onclick="login()">Login</button>
-  <div class="msg" id="msg"></div>
+<header>
+  <h1>PEAK 2K26</h1>
+  <div id="coins">Coins: 0</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('habits')">Habits</div>
+  <div class="tab" onclick="showTab('mega')">Mega</div>
+  <div class="tab" onclick="showTab('economy')">Economy</div>
+  <div class="tab" onclick="showTab('analytics')">Analytics</div>
+  <div class="tab" onclick="showTab('settings')">Settings</div>
 </div>
 
-<div class="box" id="appBox" style="display:none">
-  <h2>Cloud Sync Test</h2>
-  <div class="msg">Coins: <span id="coins">0</span></div>
-  <button onclick="addCoin()">+1 Coin</button>
-  <button onclick="logout()" style="background:#333">Logout</button>
+<div class="container">
+
+  <!-- HABITS -->
+  <div id="habits" class="section active">
+    <div class="panel">
+      Habits will appear here.
+    </div>
+  </div>
+
+  <!-- MEGA -->
+  <div id="mega" class="section">
+    <div class="panel">
+      Mega activities will appear here.
+    </div>
+  </div>
+
+  <!-- ECONOMY -->
+  <div id="economy" class="section">
+    <div class="panel">
+      Coin spending & history will appear here.
+    </div>
+  </div>
+
+  <!-- ANALYTICS -->
+  <div id="analytics" class="section">
+    <div class="panel">
+      Reports, heatmap, comparison will appear here.
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="settings" class="section">
+    <div class="panel">
+      <div class="label">Theme</div>
+      <select class="select" onchange="setTheme(this.value)">
+        <option value="demonic">Demonic</option>
+        <option value="emerald">Emerald</option>
+        <option value="ocean">Ocean</option>
+      </select>
+    </div>
+
+    <div class="panel">
+      <button class="btn secondary" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
 </div>
 
-<!-- Firebase SDKs -->
+<!-- FIREBASE SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -72,70 +191,55 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-let uid = null;
 let userRef = null;
+let userData = null;
 
 /* ===== AUTH ===== */
-function login(){
-  msg.textContent = "Logging in…";
-  auth.signInWithEmailAndPassword(email.value, password.value)
-    .catch(e => msg.textContent = e.message);
+auth.onAuthStateChanged(async user=>{
+  if(!user){
+    location.reload(); // forces login page (previous phase)
+    return;
+  }
+  userRef = db.collection("users").doc(user.uid);
+  const snap = await userRef.get();
+  userData = snap.data();
+  applyTheme(userData.theme || "demonic");
+  coins.textContent = "Coins: " + (userData.coins || 0);
+});
+
+/* ===== TABS ===== */
+function showTab(id){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.querySelector(`[onclick="showTab('${id}')"]`).classList.add("active");
+  document.getElementById(id).classList.add("active");
 }
 
+/* ===== THEMES ===== */
+const THEMES = {
+  demonic:{bg:"#0b0b0b",accent:"#b30000",dark:"#700000"},
+  emerald:{bg:"#07110b",accent:"#00b36b",dark:"#007a4a"},
+  ocean:{bg:"#07131a",accent:"#4fa3c7",dark:"#2b6f8c"}
+};
+
+function applyTheme(name){
+  const t = THEMES[name];
+  document.documentElement.style.setProperty("--bg",t.bg);
+  document.documentElement.style.setProperty("--accent",t.accent);
+  document.documentElement.style.setProperty("--accent-dark",t.dark);
+}
+
+async function setTheme(name){
+  applyTheme(name);
+  if(userRef){
+    await userRef.update({ theme:name });
+  }
+}
+
+/* ===== LOGOUT ===== */
 function logout(){
   auth.signOut();
 }
-
-/* ===== CLOUD DATA ===== */
-async function initUser(user){
-  uid = user.uid;
-  userRef = db.collection("users").doc(uid);
-
-  const snap = await userRef.get();
-  if(!snap.exists){
-    await userRef.set({
-      coins: 0,
-      habits: [],
-      mega: [],
-      spend: [],
-      heatmap: {},
-      dailyLog: [],
-      weeklyReports: [],
-      theme: "demonic",
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-  }
-  loadData();
-}
-
-async function loadData(){
-  const snap = await userRef.get();
-  const data = snap.data();
-  coins.textContent = data.coins;
-}
-
-async function addCoin(){
-  const snap = await userRef.get();
-  const current = snap.data().coins || 0;
-  await userRef.update({
-    coins: current + 1,
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-  loadData();
-}
-
-/* ===== SESSION ===== */
-auth.onAuthStateChanged(user=>{
-  if(user){
-    authBox.style.display="none";
-    appBox.style.display="block";
-    initUser(user);
-  }else{
-    authBox.style.display="block";
-    appBox.style.display="none";
-    msg.textContent="";
-  }
-});
 </script>
 
 </body>
