@@ -40,7 +40,14 @@ h1{margin:0;font-size:16px;letter-spacing:1px}
 .btn{padding:8px 14px;background:var(--accent-dark);border:none;color:#fff;cursor:pointer;font-size:13px}
 .btn.secondary{background:#333}
 
-input{width:100%;padding:8px;background:#000;color:#fff;border:1px solid #333;margin-bottom:8px}
+input,select{
+  width:100%;
+  padding:8px;
+  background:#000;
+  color:#fff;
+  border:1px solid #333;
+  margin-bottom:8px
+}
 
 .modal{
   position:fixed;inset:0;background:rgba(0,0,0,.85);
@@ -75,13 +82,20 @@ input{width:100%;padding:8px;background:#000;color:#fff;border:1px solid #333;ma
     </div>
   </div>
 
-  <!-- PLACEHOLDERS -->
   <div id="mega" class="section"><div class="panel">Next step</div></div>
   <div id="economy" class="section"><div class="panel">Next step</div></div>
   <div id="analytics" class="section"><div class="panel">Next step</div></div>
 
   <!-- SETTINGS -->
   <div id="settings" class="section">
+    <div class="panel">
+      <div class="meta">Theme</div>
+      <select onchange="setTheme(this.value)">
+        <option value="demonic">Demonic</option>
+        <option value="emerald">Emerald</option>
+        <option value="ocean">Ocean</option>
+      </select>
+    </div>
     <div class="panel">
       <button class="btn secondary" onclick="logout()">Logout</button>
     </div>
@@ -121,17 +135,35 @@ const db = firebase.firestore();
 let userRef, data;
 const TODAY = new Date().toDateString();
 
+/* ===== THEMES ===== */
+const THEMES={
+  demonic:{bg:"#0b0b0b",accent:"#b30000",dark:"#700000"},
+  emerald:{bg:"#07110b",accent:"#00b36b",dark:"#007a4a"},
+  ocean:{bg:"#07131a",accent:"#4fa3c7",dark:"#2b6f8c"}
+};
+function applyTheme(name){
+  const t=THEMES[name];
+  document.documentElement.style.setProperty("--bg",t.bg);
+  document.documentElement.style.setProperty("--accent",t.accent);
+  document.documentElement.style.setProperty("--accent-dark",t.dark);
+}
+async function setTheme(name){
+  applyTheme(name);
+  if(userRef){ await userRef.update({theme:name}); data.theme=name; }
+}
+
 /* ===== AUTH ===== */
 auth.onAuthStateChanged(async user=>{
   if(!user){ location.reload(); return; }
   userRef = db.collection("users").doc(user.uid);
   const snap = await userRef.get();
   data = snap.data();
+  applyTheme(data.theme || "demonic");
   dailyReset();
   render();
 });
 
-/* ===== TABS ===== */
+/* ===== UI ===== */
 function showTab(id){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
@@ -148,6 +180,7 @@ async function addHabit(){
     name:habitName.value,
     time:habitTime.value,
     streak:0,
+    lastCompleted:null,
     done:false,
     missed:false
   });
@@ -160,10 +193,21 @@ async function addHabit(){
 async function toggleHabit(i){
   const h=data.habits[i];
   if(h.done)return;
-  h.done=true;
-  h.missed=false;
-  h.streak++;
-  data.coins++;
+
+  const today = new Date().toDateString();
+  const yesterday = new Date(Date.now()-86400000).toDateString();
+
+  if(h.lastCompleted === yesterday){
+    h.streak += 1;
+  } else {
+    h.streak = 1;
+  }
+
+  h.lastCompleted = today;
+  h.done = true;
+  h.missed = false;
+
+  data.coins += 1;
   await save();
   render();
 }
@@ -172,10 +216,7 @@ async function toggleHabit(i){
 function dailyReset(){
   if(data.lastDate !== TODAY){
     data.habits.forEach(h=>{
-      if(!h.done){
-        h.streak=0;
-        h.missed=true;
-      }
+      if(!h.done){ h.missed=true; }
       h.done=false;
     });
     data.lastDate = TODAY;
@@ -188,7 +229,8 @@ async function save(){
   await userRef.update({
     habits:data.habits,
     coins:data.coins,
-    lastDate:data.lastDate
+    lastDate:data.lastDate,
+    theme:data.theme || "demonic"
   });
 }
 
@@ -199,7 +241,9 @@ function render(){
   data.habits.forEach((h,i)=>{
     habitList.innerHTML+=`
       <div class="row ${h.missed?"missed":""}">
-        <div>${h.name}<div class="meta">${h.time} · ${h.streak}d</div></div>
+        <div>${h.name}
+          <div class="meta">${h.time} · Streak: ${h.streak}d</div>
+        </div>
         <div class="check ${h.done?"done":""}" onclick="toggleHabit(${i})"></div>
       </div>`;
   });
