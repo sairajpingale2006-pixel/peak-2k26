@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Peak 2k26</title>
+
+<style>
+  :root {
+    --bg: #0b0b0b;
+    --red: #b30000;
+    --red-dark: #700000;
+    --text: #e6e6e6;
+    --muted: #777;
+  }
+
+  * {
+    box-sizing: border-box;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #1a1a1a;
+  }
+
+  header h1 {
+    font-size: 18px;
+    letter-spacing: 1px;
+    margin: 0;
+  }
+
+  #coins {
+    font-size: 14px;
+    color: var(--red);
+  }
+
+  .container {
+    padding: 20px;
+    max-width: 700px;
+    margin: auto;
+  }
+
+  .today {
+    margin-bottom: 20px;
+  }
+
+  .today h2 {
+    font-size: 14px;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .today p {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .habit {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid #1a1a1a;
+  }
+
+  .habit.missed {
+    opacity: 0.65;
+  }
+
+  .habit-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .habit-name {
+    font-size: 15px;
+  }
+
+  .habit-meta {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .check {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--muted);
+    cursor: pointer;
+  }
+
+  .check.done {
+    background: var(--red);
+    border-color: var(--red);
+  }
+
+  .add-btn {
+    margin-top: 25px;
+    font-size: 13px;
+    color: var(--red);
+    cursor: pointer;
+    width: fit-content;
+  }
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-content {
+    background: #111;
+    padding: 20px;
+    width: 90%;
+    max-width: 400px;
+    border: 1px solid #222;
+  }
+
+  .modal-content h3 {
+    margin-top: 0;
+    font-size: 15px;
+  }
+
+  .modal-content input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    background: #000;
+    border: 1px solid #333;
+    color: var(--text);
+  }
+
+  .modal-content button {
+    background: var(--red-dark);
+    border: none;
+    padding: 8px 14px;
+    color: #fff;
+    cursor: pointer;
+  }
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>PEAK 2K26</h1>
+  <div id="coins">Coins: 0</div>
+</header>
+
+<div class="container">
+  <div class="today">
+    <h2>TODAY</h2>
+    <p id="todayStatus">No actions yet.</p>
+  </div>
+
+  <div id="habitList"></div>
+
+  <div class="add-btn" onclick="openModal()">+ Add</div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h3>Add Habit</h3>
+    <input id="habitName" placeholder="Habit name"/>
+    <input id="habitTime" placeholder="Time window (e.g. 6:00 - 6:30)"/>
+    <button onclick="addHabit()">Add</button>
+  </div>
+</div>
+
+<script>
+  let data = JSON.parse(localStorage.getItem("peakData")) || {
+    coins: 0,
+    habits: []
+  };
+
+  function save() {
+    localStorage.setItem("peakData", JSON.stringify(data));
+  }
+
+  function render() {
+    const list = document.getElementById("habitList");
+    list.innerHTML = "";
+
+    let done = 0;
+
+    data.habits.forEach((h, i) => {
+      const row = document.createElement("div");
+      row.className = "habit" + (h.done ? "" : "");
+
+      const left = document.createElement("div");
+      left.className = "habit-left";
+
+      const name = document.createElement("div");
+      name.className = "habit-name";
+      name.textContent = h.name;
+
+      const meta = document.createElement("div");
+      meta.className = "habit-meta";
+      meta.textContent = `${h.time} · Streak: ${h.streak}d`;
+
+      left.appendChild(name);
+      left.appendChild(meta);
+
+      const check = document.createElement("div");
+      check.className = "check" + (h.done ? " done" : "");
+      check.onclick = () => toggleHabit(i);
+
+      row.appendChild(left);
+      row.appendChild(check);
+
+      list.appendChild(row);
+
+      if (h.done) done++;
+    });
+
+    document.getElementById("coins").textContent = `Coins: ${data.coins}`;
+    document.getElementById("todayStatus").textContent =
+      `${done} / ${data.habits.length} habits completed`;
+
+    save();
+  }
+
+  function toggleHabit(index) {
+    const h = data.habits[index];
+    if (h.done) return;
+
+    h.done = true;
+    h.streak += 1;
+    data.coins += 1;
+
+    render();
+  }
+
+  function openModal() {
+    document.getElementById("modal").style.display = "flex";
+  }
+
+  function addHabit() {
+    const name = document.getElementById("habitName").value.trim();
+    const time = document.getElementById("habitTime").value.trim();
+    if (!name) return;
+
+    data.habits.push({
+      name,
+      time,
+      streak: 0,
+      done: false
+    });
+
+    document.getElementById("habitName").value = "";
+    document.getElementById("habitTime").value = "";
+    document.getElementById("modal").style.display = "none";
+
+    render();
+  }
+
+  render();
+</script>
+
+</body>
+</html>
