@@ -1,156 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Peak 2k26</title>
 
 <style>
-  :root {
-    --bg: #0b0b0b;
-    --red: #b30000;
-    --red-dark: #700000;
-    --text: #e6e6e6;
-    --muted: #777;
-  }
-
-  * {
-    box-sizing: border-box;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  }
-
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-  }
-
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #1a1a1a;
-  }
-
-  header h1 {
-    font-size: 18px;
-    letter-spacing: 1px;
-    margin: 0;
-  }
-
-  #coins {
-    font-size: 14px;
-    color: var(--red);
-  }
-
-  .container {
-    padding: 20px;
-    max-width: 700px;
-    margin: auto;
-  }
-
-  .today {
-    margin-bottom: 20px;
-  }
-
-  .today h2 {
-    font-size: 14px;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-  }
-
-  .today p {
-    font-size: 13px;
-    color: var(--muted);
-    margin: 0;
-  }
-
-  .habit {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 0;
-    border-bottom: 1px solid #1a1a1a;
-  }
-
-  .habit.missed {
-    opacity: 0.65;
-  }
-
-  .habit-left {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .habit-name {
-    font-size: 15px;
-  }
-
-  .habit-meta {
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  .check {
-    width: 22px;
-    height: 22px;
-    border: 2px solid var(--muted);
-    cursor: pointer;
-  }
-
-  .check.done {
-    background: var(--red);
-    border-color: var(--red);
-  }
-
-  .add-btn {
-    margin-top: 25px;
-    font-size: 13px;
-    color: var(--red);
-    cursor: pointer;
-    width: fit-content;
-  }
-
-  .modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.8);
-    display: none;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .modal-content {
-    background: #111;
-    padding: 20px;
-    width: 90%;
-    max-width: 400px;
-    border: 1px solid #222;
-  }
-
-  .modal-content h3 {
-    margin-top: 0;
-    font-size: 15px;
-  }
-
-  .modal-content input {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 10px;
-    background: #000;
-    border: 1px solid #333;
-    color: var(--text);
-  }
-
-  .modal-content button {
-    background: var(--red-dark);
-    border: none;
-    padding: 8px 14px;
-    color: #fff;
-    cursor: pointer;
-  }
+:root{
+  --bg:#0b0b0b;
+  --accent:#b30000;
+  --accent-dark:#700000;
+  --text:#e6e6e6;
+  --muted:#777;
+}
+*{box-sizing:border-box;font-family:system-ui,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text)}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #1a1a1a}
+h1{margin:0;font-size:18px;letter-spacing:1px}
+#coins{color:var(--accent);font-size:14px}
+.container{padding:20px;max-width:1000px;margin:auto}
+.section-title{margin-top:30px;font-size:13px;letter-spacing:1px;color:var(--muted)}
+.ai{border-left:3px solid var(--accent);padding:10px;margin:15px 0;font-size:13px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1a1a1a}
+.row.missed{opacity:.6}
+.meta{font-size:12px;color:var(--muted)}
+.check{width:22px;height:22px;border:2px solid var(--muted);cursor:pointer}
+.check.done{background:var(--accent);border-color:var(--accent)}
+.btn{margin-top:15px;font-size:13px;color:var(--accent);cursor:pointer}
+.log{font-size:12px;color:var(--muted);margin-top:10px}
 </style>
 </head>
 
@@ -162,113 +39,183 @@
 </header>
 
 <div class="container">
-  <div class="today">
-    <h2>TODAY</h2>
-    <p id="todayStatus">No actions yet.</p>
-  </div>
 
+  <div id="aiBox"></div>
+
+  <div class="section-title">HABITS</div>
   <div id="habitList"></div>
 
-  <div class="add-btn" onclick="openModal()">+ Add</div>
-</div>
+  <div class="section-title">MEGA ACTIVITIES</div>
+  <div id="megaList"></div>
 
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <h3>Add Habit</h3>
-    <input id="habitName" placeholder="Habit name"/>
-    <input id="habitTime" placeholder="Time window (e.g. 6:00 - 6:30)"/>
-    <button onclick="addHabit()">Add</button>
-  </div>
+  <div class="section-title">WEEKLY COMPARISON</div>
+  <div id="compareBox" class="ai"></div>
+
+  <div class="section-title">FAILURE HEATMAP</div>
+  <div id="heatmap"></div>
+
+  <div class="section-title">SPENDING</div>
+  <div id="spendLog" class="log"></div>
+
 </div>
 
 <script>
-  let data = JSON.parse(localStorage.getItem("peakData")) || {
-    coins: 0,
-    habits: []
-  };
+/* =========================
+   DATA MODEL
+========================= */
+const DAY = 24*60*60*1000;
+const TODAY = new Date().toDateString();
 
-  function save() {
-    localStorage.setItem("peakData", JSON.stringify(data));
-  }
+let data = JSON.parse(localStorage.getItem("peakData")) || {
+  coins:0,
+  lastDate:TODAY,
+  habits:[],
+  mega:[],
+  spendHistory:[],
+  heatmap:{},
+  dailyLog:[],      // {date, completed, coins}
+  compareHistory:[] // timestamps
+};
 
-  function render() {
-    const list = document.getElementById("habitList");
-    list.innerHTML = "";
+function save(){localStorage.setItem("peakData",JSON.stringify(data))}
 
-    let done = 0;
-
-    data.habits.forEach((h, i) => {
-      const row = document.createElement("div");
-      row.className = "habit" + (h.done ? "" : "");
-
-      const left = document.createElement("div");
-      left.className = "habit-left";
-
-      const name = document.createElement("div");
-      name.className = "habit-name";
-      name.textContent = h.name;
-
-      const meta = document.createElement("div");
-      meta.className = "habit-meta";
-      meta.textContent = `${h.time} · Streak: ${h.streak}d`;
-
-      left.appendChild(name);
-      left.appendChild(meta);
-
-      const check = document.createElement("div");
-      check.className = "check" + (h.done ? " done" : "");
-      check.onclick = () => toggleHabit(i);
-
-      row.appendChild(left);
-      row.appendChild(check);
-
-      list.appendChild(row);
-
-      if (h.done) done++;
+/* =========================
+   DAILY RESET + LOG
+========================= */
+function dailyReset(){
+  if(data.lastDate !== TODAY){
+    const completed = data.habits.filter(h=>h.done).length;
+    data.dailyLog.push({
+      date:data.lastDate,
+      completed,
+      coins:data.coins
     });
 
-    document.getElementById("coins").textContent = `Coins: ${data.coins}`;
-    document.getElementById("todayStatus").textContent =
-      `${done} / ${data.habits.length} habits completed`;
+    const now=new Date();
+    const day=(now.getDay()+6)%7;
+    const hour=now.getHours();
 
-    save();
-  }
-
-  function toggleHabit(index) {
-    const h = data.habits[index];
-    if (h.done) return;
-
-    h.done = true;
-    h.streak += 1;
-    data.coins += 1;
-
-    render();
-  }
-
-  function openModal() {
-    document.getElementById("modal").style.display = "flex";
-  }
-
-  function addHabit() {
-    const name = document.getElementById("habitName").value.trim();
-    const time = document.getElementById("habitTime").value.trim();
-    if (!name) return;
-
-    data.habits.push({
-      name,
-      time,
-      streak: 0,
-      done: false
+    data.habits.forEach(h=>{
+      if(!h.done){
+        const key=`${day}-${hour}`;
+        data.heatmap[key]=(data.heatmap[key]||0)+1;
+        h.streak=0;
+        h.missed=true;
+      }
+      h.done=false;
     });
 
-    document.getElementById("habitName").value = "";
-    document.getElementById("habitTime").value = "";
-    document.getElementById("modal").style.display = "none";
-
-    render();
+    data.lastDate = TODAY;
   }
+}
 
+/* =========================
+   WEEKLY COMPARISON
+========================= */
+function weeklyCompare(){
+  if(data.compareHistory.includes(TODAY)) return;
+
+  const last7 = data.dailyLog.slice(-7);
+  const prev7 = data.dailyLog.slice(-14,-7);
+
+  if(last7.length < 7 || prev7.length < 7) return;
+
+  const sum = arr => arr.reduce((a,b)=>a+b.completed,0);
+  const c1 = sum(last7);
+  const c2 = sum(prev7);
+
+  let verdict;
+  if(c1 > c2) verdict = "You improved. Barely acceptable.";
+  else if(c1 < c2) verdict = "You regressed. Own it.";
+  else verdict = "No progress. You stagnated.";
+
+  compareBox.innerHTML =
+    `This week: ${c1} actions<br>Last week: ${c2}<br>${verdict}`;
+
+  data.compareHistory.push(TODAY);
+}
+
+/* =========================
+   HEATMAP
+========================= */
+function renderHeatmap(){
+  heatmap.innerHTML="";
+  heatmap.style.display="grid";
+  heatmap.style.gridTemplateColumns="repeat(24,1fr)";
+  heatmap.style.gap="2px";
+
+  for(let d=0;d<7;d++){
+    for(let h=0;h<24;h++){
+      const key=`${d}-${h}`;
+      const v=data.heatmap[key]||0;
+      const lvl=Math.min(v,5);
+      const cell=document.createElement("div");
+      cell.style.height="14px";
+      cell.style.background=[
+        "#111","#330000","#550000","#770000","#990000","#b30000"
+      ][lvl];
+      heatmap.appendChild(cell);
+    }
+  }
+}
+
+/* =========================
+   AI (SIMPLE)
+========================= */
+function runAI(){
+  const hour=new Date().getHours();
+  const done=data.habits.filter(h=>h.done).length;
+  if(done===0 && hour>=21){
+    aiBox.innerHTML=`<div class="ai">Today produced nothing.</div>`;
+  } else aiBox.innerHTML="";
+}
+
+/* =========================
+   UI
+========================= */
+function render(){
+  dailyReset();
+
+  habitList.innerHTML="";
+  data.habits.forEach((h,i)=>{
+    habitList.innerHTML+=`
+      <div class="row ${h.missed?"missed":""}">
+        <div>${h.name}<div class="meta">${h.streak||0}d</div></div>
+        <div class="check ${h.done?"done":""}" onclick="toggleHabit(${i})"></div>
+      </div>`;
+  });
+
+  megaList.innerHTML="";
+  data.mega.forEach(m=>{
+    megaList.innerHTML+=`
+      <div class="row ${m.done?"missed":""}">
+        <div>${m.title}<div class="meta">${m.reward} coins</div></div>
+        <div class="check ${m.done?"done":""}"></div>
+      </div>`;
+  });
+
+  spendLog.innerHTML=data.spendHistory.slice(-5).reverse()
+    .map(s=>`−${s.amount} (${s.reason})`).join("<br>");
+
+  coins.textContent=`Coins: ${data.coins}`;
+
+  runAI();
+  weeklyCompare();
+  renderHeatmap();
+  save();
+}
+
+function toggleHabit(i){
+  const h=data.habits[i];
+  if(h.done)return;
+  h.done=true;
+  h.missed=false;
+  h.streak++;
+  data.coins++;
   render();
+}
+
+render();
 </script>
 
 </body>
