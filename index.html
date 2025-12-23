@@ -6,7 +6,6 @@
 <title>Peak 2K26</title>
 
 <style>
-/* ===== THEME VARIABLES ===== */
 :root{
   --bg:#0b0b0b;
   --panel:#111;
@@ -16,95 +15,38 @@
   --text:#e6e6e6;
   --muted:#777;
 }
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border)}
+h1{margin:0;font-size:16px;letter-spacing:1px}
+#coins{color:var(--accent);font-size:14px}
 
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:system-ui,sans-serif;
-}
+.tabs{display:flex;border-bottom:1px solid var(--border)}
+.tab{padding:12px 16px;cursor:pointer;font-size:13px;color:var(--muted)}
+.tab.active{color:var(--accent);border-bottom:2px solid var(--accent)}
 
-/* ===== HEADER ===== */
-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:14px 20px;
-  border-bottom:1px solid var(--border);
-}
-h1{
-  margin:0;
-  font-size:16px;
-  letter-spacing:1px;
-}
-#coins{
-  color:var(--accent);
-  font-size:14px;
-}
+.container{padding:20px;max-width:1000px;margin:auto}
+.section{display:none}
+.section.active{display:block}
 
-/* ===== TABS ===== */
-.tabs{
-  display:flex;
-  border-bottom:1px solid var(--border);
-}
-.tab{
-  padding:12px 16px;
-  cursor:pointer;
-  font-size:13px;
-  color:var(--muted);
-}
-.tab.active{
-  color:var(--accent);
-  border-bottom:2px solid var(--accent);
-}
+.panel{background:var(--panel);border:1px solid var(--border);padding:16px;margin-bottom:16px}
 
-/* ===== CONTENT ===== */
-.container{
-  padding:20px;
-  max-width:1000px;
-  margin:auto;
-}
-.section{
-  display:none;
-}
-.section.active{
-  display:block;
-}
+.row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.row.missed{opacity:.5}
+.meta{font-size:12px;color:var(--muted)}
 
-/* ===== PANELS ===== */
-.panel{
-  background:var(--panel);
-  border:1px solid var(--border);
-  padding:16px;
-  margin-bottom:16px;
-}
+.check{width:22px;height:22px;border:2px solid var(--muted);cursor:pointer}
+.check.done{background:var(--accent);border-color:var(--accent)}
 
-/* ===== BUTTONS ===== */
-.btn{
-  padding:8px 14px;
-  background:var(--accent-dark);
-  border:none;
-  color:#fff;
-  cursor:pointer;
-  font-size:13px;
-}
-.btn.secondary{
-  background:#333;
-}
+.btn{padding:8px 14px;background:var(--accent-dark);border:none;color:#fff;cursor:pointer;font-size:13px}
+.btn.secondary{background:#333}
 
-/* ===== SETTINGS ===== */
-.select{
-  width:100%;
-  padding:8px;
-  background:#000;
-  color:#fff;
-  border:1px solid #333;
+input{width:100%;padding:8px;background:#000;color:#fff;border:1px solid #333;margin-bottom:8px}
+
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);
+  display:none;align-items:center;justify-content:center
 }
-.label{
-  font-size:12px;
-  color:var(--muted);
-  margin-bottom:6px;
-}
+.modal .panel{width:320px}
 </style>
 </head>
 
@@ -128,42 +70,18 @@ h1{
   <!-- HABITS -->
   <div id="habits" class="section active">
     <div class="panel">
-      Habits will appear here.
+      <div id="habitList"></div>
+      <button class="btn" onclick="openHabit()">+ Add Habit</button>
     </div>
   </div>
 
-  <!-- MEGA -->
-  <div id="mega" class="section">
-    <div class="panel">
-      Mega activities will appear here.
-    </div>
-  </div>
-
-  <!-- ECONOMY -->
-  <div id="economy" class="section">
-    <div class="panel">
-      Coin spending & history will appear here.
-    </div>
-  </div>
-
-  <!-- ANALYTICS -->
-  <div id="analytics" class="section">
-    <div class="panel">
-      Reports, heatmap, comparison will appear here.
-    </div>
-  </div>
+  <!-- PLACEHOLDERS -->
+  <div id="mega" class="section"><div class="panel">Next step</div></div>
+  <div id="economy" class="section"><div class="panel">Next step</div></div>
+  <div id="analytics" class="section"><div class="panel">Next step</div></div>
 
   <!-- SETTINGS -->
   <div id="settings" class="section">
-    <div class="panel">
-      <div class="label">Theme</div>
-      <select class="select" onchange="setTheme(this.value)">
-        <option value="demonic">Demonic</option>
-        <option value="emerald">Emerald</option>
-        <option value="ocean">Ocean</option>
-      </select>
-    </div>
-
     <div class="panel">
       <button class="btn secondary" onclick="logout()">Logout</button>
     </div>
@@ -171,7 +89,16 @@ h1{
 
 </div>
 
-<!-- FIREBASE SDKs -->
+<!-- ADD HABIT MODAL -->
+<div class="modal" id="habitModal">
+  <div class="panel">
+    <input id="habitName" placeholder="Habit name">
+    <input id="habitTime" placeholder="Time window">
+    <button class="btn" onclick="addHabit()">Add</button>
+  </div>
+</div>
+
+<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -191,55 +118,95 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-let userRef = null;
-let userData = null;
+let userRef, data;
+const TODAY = new Date().toDateString();
 
 /* ===== AUTH ===== */
 auth.onAuthStateChanged(async user=>{
-  if(!user){
-    location.reload(); // forces login page (previous phase)
-    return;
-  }
+  if(!user){ location.reload(); return; }
   userRef = db.collection("users").doc(user.uid);
   const snap = await userRef.get();
-  userData = snap.data();
-  applyTheme(userData.theme || "demonic");
-  coins.textContent = "Coins: " + (userData.coins || 0);
+  data = snap.data();
+  dailyReset();
+  render();
 });
 
 /* ===== TABS ===== */
 function showTab(id){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-  document.querySelector(`[onclick="showTab('${id}')"]`).classList.add("active");
+  event.target.classList.add("active");
   document.getElementById(id).classList.add("active");
 }
 
-/* ===== THEMES ===== */
-const THEMES = {
-  demonic:{bg:"#0b0b0b",accent:"#b30000",dark:"#700000"},
-  emerald:{bg:"#07110b",accent:"#00b36b",dark:"#007a4a"},
-  ocean:{bg:"#07131a",accent:"#4fa3c7",dark:"#2b6f8c"}
-};
+/* ===== HABITS ===== */
+function openHabit(){ habitModal.style.display="flex" }
 
-function applyTheme(name){
-  const t = THEMES[name];
-  document.documentElement.style.setProperty("--bg",t.bg);
-  document.documentElement.style.setProperty("--accent",t.accent);
-  document.documentElement.style.setProperty("--accent-dark",t.dark);
+async function addHabit(){
+  if(!habitName.value.trim())return;
+  data.habits.push({
+    name:habitName.value,
+    time:habitTime.value,
+    streak:0,
+    done:false,
+    missed:false
+  });
+  habitName.value=habitTime.value="";
+  habitModal.style.display="none";
+  await save();
+  render();
 }
 
-async function setTheme(name){
-  applyTheme(name);
-  if(userRef){
-    await userRef.update({ theme:name });
+async function toggleHabit(i){
+  const h=data.habits[i];
+  if(h.done)return;
+  h.done=true;
+  h.missed=false;
+  h.streak++;
+  data.coins++;
+  await save();
+  render();
+}
+
+/* ===== DAILY RESET ===== */
+function dailyReset(){
+  if(data.lastDate !== TODAY){
+    data.habits.forEach(h=>{
+      if(!h.done){
+        h.streak=0;
+        h.missed=true;
+      }
+      h.done=false;
+    });
+    data.lastDate = TODAY;
+    save();
   }
 }
 
-/* ===== LOGOUT ===== */
-function logout(){
-  auth.signOut();
+/* ===== SAVE ===== */
+async function save(){
+  await userRef.update({
+    habits:data.habits,
+    coins:data.coins,
+    lastDate:data.lastDate
+  });
 }
+
+/* ===== RENDER ===== */
+function render(){
+  coins.textContent="Coins: "+data.coins;
+  habitList.innerHTML="";
+  data.habits.forEach((h,i)=>{
+    habitList.innerHTML+=`
+      <div class="row ${h.missed?"missed":""}">
+        <div>${h.name}<div class="meta">${h.time} · ${h.streak}d</div></div>
+        <div class="check ${h.done?"done":""}" onclick="toggleHabit(${i})"></div>
+      </div>`;
+  });
+}
+
+/* ===== LOGOUT ===== */
+function logout(){ auth.signOut(); }
 </script>
 
 </body>
