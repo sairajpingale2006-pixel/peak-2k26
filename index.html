@@ -5,60 +5,55 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Peak 2K26</title>
 
-<!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#b30000">
 
 <style>
-/* ===== PEAK 2K26 — v1 LOCKED ===== */
 :root{
-  --bg:#0b0b0b;
-  --panel:#111;
-  --border:#1f1f1f;
-  --accent:#b30000;
-  --accent-dark:#700000;
-  --text:#e6e6e6;
-  --muted:#777;
+  --bg:#0b0b0b;--panel:#111;--border:#1f1f1f;
+  --accent:#b30000;--accent-dark:#700000;
+  --text:#e6e6e6;--muted:#777;
 }
-body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
-header{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border)}
-h1{margin:0;font-size:16px;letter-spacing:1px}
-#coins{color:var(--accent);font-size:14px}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui}
+header{display:flex;justify-content:space-between;align-items:center;
+padding:12px 20px;border-bottom:1px solid var(--border)}
+h1{margin:0;font-size:14px;letter-spacing:1px}
+
+select{background:#000;color:#fff;border:1px solid #333;padding:6px}
 
 .tabs{display:flex;border-bottom:1px solid var(--border)}
-.tab{padding:12px 16px;cursor:pointer;font-size:13px;color:var(--muted)}
+.tab{padding:12px 16px;font-size:13px;color:var(--muted);cursor:pointer}
 .tab.active{color:var(--accent);border-bottom:2px solid var(--accent)}
 
-.container{padding:20px;max-width:1100px;margin:auto}
+.container{max-width:1100px;margin:auto;padding:20px}
 .section{display:none}
 .section.active{display:block}
 
-.panel{background:var(--panel);border:1px solid var(--border);padding:16px;margin-bottom:16px}
-.meta{font-size:12px;color:var(--muted)}
-.row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.panel{background:var(--panel);border:1px solid var(--border);
+padding:16px;margin-bottom:16px}
+
+.row{display:flex;justify-content:space-between;align-items:center;
+padding:10px 0;border-bottom:1px solid var(--border)}
 .row.missed{opacity:.5}
 
 .check{width:22px;height:22px;border:2px solid var(--muted);cursor:pointer}
 .check.done{background:var(--accent);border-color:var(--accent)}
 
-.delete{margin-left:12px;color:#777;cursor:pointer}
-.delete:hover{color:#b30000}
+.tag{font-size:11px;margin-left:6px}
+.focus{color:var(--accent)}
+.on{color:lime}
+.off{color:red}
 
-.btn{padding:8px 14px;background:var(--accent-dark);border:none;color:#fff;cursor:pointer;font-size:13px}
-.btn.secondary{background:#333}
+.btn{padding:8px 14px;background:var(--accent-dark);
+border:none;color:#fff;cursor:pointer;font-size:13px}
+input{width:100%;padding:8px;margin-bottom:8px;background:#000;
+color:#fff;border:1px solid #333}
 
-input,select{width:100%;padding:8px;background:#000;color:#fff;border:1px solid #333;margin-bottom:8px}
-
-.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-.cell{height:26px;background:#222}
-.cell.fail{background:#b30000}
-.cell.ok{background:#2b6f8c}
-
-.ai{font-size:14px}
-.ai strong{color:var(--accent)}
-
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center}
+.modal{position:fixed;inset:0;display:none;
+align-items:center;justify-content:center;background:rgba(0,0,0,.85)}
 .modal .panel{width:320px}
+
+.ai strong{color:var(--accent)}
 </style>
 </head>
 
@@ -66,15 +61,15 @@ input,select{width:100%;padding:8px;background:#000;color:#fff;border:1px solid 
 
 <header>
   <h1>PEAK 2K26</h1>
-  <div id="coins">Coins: 0</div>
+  <div>
+    <select id="identitySelect" onchange="switchIdentity(this.value)"></select>
+  </div>
 </header>
 
 <div class="tabs">
   <div class="tab active" onclick="showTab('habits')">Habits</div>
   <div class="tab" onclick="showTab('mega')">Mega</div>
-  <div class="tab" onclick="showTab('economy')">Economy</div>
   <div class="tab" onclick="showTab('analytics')">Analytics</div>
-  <div class="tab" onclick="showTab('settings')">Settings</div>
 </div>
 
 <div class="container">
@@ -88,40 +83,14 @@ input,select{width:100%;padding:8px;background:#000;color:#fff;border:1px solid 
 
 <div id="mega" class="section">
   <div class="panel">
+    <div id="megaNote"></div>
     <div id="megaList"></div>
     <button class="btn" onclick="openMega()">+ Add Mega</button>
   </div>
 </div>
 
-<div id="economy" class="section">
-  <div class="panel">
-    <button class="btn" onclick="openSpend()">Spend Coins</button>
-    <button class="btn secondary" onclick="exportData()">Export Backup</button>
-  </div>
-  <div class="panel">
-    <div class="meta">Spend History</div>
-    <div id="spendList"></div>
-  </div>
-</div>
-
 <div id="analytics" class="section">
-  <div class="panel"><div id="weeklySummary"></div></div>
-  <div class="panel"><div class="grid" id="heatmap"></div></div>
   <div class="panel ai" id="aiPanel"></div>
-</div>
-
-<div id="settings" class="section">
-  <div class="panel">
-    <div class="meta">Theme</div>
-    <select onchange="setTheme(this.value)">
-      <option value="demonic">Demonic</option>
-      <option value="emerald">Emerald</option>
-      <option value="ocean">Ocean</option>
-    </select>
-  </div>
-  <div class="panel">
-    <button class="btn secondary" onclick="logout()">Logout</button>
-  </div>
 </div>
 
 </div>
@@ -129,117 +98,152 @@ input,select{width:100%;padding:8px;background:#000;color:#fff;border:1px solid 
 <!-- MODALS -->
 <div class="modal" id="habitModal"><div class="panel">
   <input id="habitName" placeholder="Habit name">
-  <input id="habitTime" placeholder="Time window">
+  <input id="habitTime" placeholder="Window (e.g. 6-9)">
   <button class="btn" onclick="addHabit()">Add</button>
 </div></div>
 
 <div class="modal" id="megaModal"><div class="panel">
   <input id="megaTitle" placeholder="Mega title">
-  <input id="megaReward" type="number" placeholder="Coin reward">
+  <input id="megaReward" type="number" placeholder="Reward coins">
   <button class="btn" onclick="addMega()">Add</button>
 </div></div>
 
-<div class="modal" id="spendModal"><div class="panel">
-  <input id="spendAmount" type="number" placeholder="Coins to spend">
-  <input id="spendReason" placeholder="Reason">
-  <button class="btn" onclick="spendCoins()">Confirm</button>
-</div></div>
-
-<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <script>
-/* === SERVICE WORKER === */
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("service-worker.js");
-}
-
-/* === FIREBASE === */
-const firebaseConfig={
+/* ================= FIREBASE ================= */
+firebase.initializeApp({
   apiKey:"AIzaSyCv1tDAxtNMiI2otPWNmnlIgatzR2VxuyU",
   authDomain:"peak-2k26-web.firebaseapp.com",
-  projectId:"peak-2k26-web",
-  storageBucket:"peak-2k26-web.appspot.com",
-  messagingSenderId:"1006854372406",
-  appId:"1:1006854372406:web:3acb7885e6dddc8065ac97"
-};
-firebase.initializeApp(firebaseConfig);
-const auth=firebase.auth();
-const db=firebase.firestore();
-
+  projectId:"peak-2k26-web"
+});
+const auth=firebase.auth(), db=firebase.firestore();
 let userRef,data;
+
+/* ================= HELPERS ================= */
 const TODAY=new Date().toDateString();
+const parseWin=s=>{if(!s||!s.includes("-"))return null;
+  let[a,b]=s.split("-").map(Number);return{start:a,end:b}};
+const inWin=w=>!w||(()=>{let h=new Date().getHours();return h>=w.start&&h<w.end})();
 
-/* === THEMES === */
-const THEMES={
-  demonic:{bg:"#0b0b0b",accent:"#b30000",dark:"#700000"},
-  emerald:{bg:"#07110b",accent:"#00b36b",dark:"#007a4a"},
-  ocean:{bg:"#07131a",accent:"#4fa3c7",dark:"#2b6f8c"}
-};
-function applyTheme(n){
-  const t=THEMES[n];
-  document.documentElement.style.setProperty("--bg",t.bg);
-  document.documentElement.style.setProperty("--accent",t.accent);
-  document.documentElement.style.setProperty("--accent-dark",t.dark);
-}
-async function setTheme(n){
-  applyTheme(n);
-  if(userRef){await userRef.update({theme:n});data.theme=n;}
-}
-
-/* === AUTH === */
+/* ================= AUTH ================= */
 auth.onAuthStateChanged(async u=>{
-  if(!u){location.reload();return;}
+  if(!u)return location.reload();
   userRef=db.collection("users").doc(u.uid);
   const snap=await userRef.get();
-  data=snap.data();
-  applyTheme(data.theme||"demonic");
-  dailyReset();
-  weeklyReport();
-  renderAll();
+  data=snap.data()||{
+    coins:0,
+    identities:{},
+    activeIdentity:null
+  };
+  if(!Object.keys(data.identities).length){
+    createIdentity(prompt("Create your first identity name:"));
+  }
+  renderIdentitySelect();
+  render();
 });
 
-/* === UI === */
+/* ================= IDENTITY CORE ================= */
+function getID(){return data.activeIdentity}
+function ctx(){return data.identities[getID()]}
+
+function createIdentity(name){
+  const id=name.toLowerCase().replace(/\s+/g,"-");
+  data.identities[id]={name,habits:[],history:[],rules:{}};
+  data.activeIdentity=id;
+  save();
+}
+
+function switchIdentity(id){
+  data.activeIdentity=id;
+  save();
+}
+
+function renderIdentitySelect(){
+  identitySelect.innerHTML="";
+  Object.entries(data.identities).forEach(([id,i])=>{
+    identitySelect.innerHTML+=
+      `<option value="${id}" ${id===getID()?"selected":""}>${i.name}</option>`;
+  });
+}
+
+/* ================= LOGIC ================= */
+function log(h,status,extra={}){
+  ctx().history.push({
+    name:h.name,status,date:TODAY,
+    hour:new Date().getHours(),
+    offWindow:extra.offWindow||false
+  });
+}
+
+function addHabit(){
+  ctx().habits.push({
+    name:habitName.value,
+    window:parseWin(habitTime.value),
+    done:false,streak:0
+  });
+  habitName.value=habitTime.value="";
+  habitModal.style.display="none";save();
+}
+
+function toggleHabit(i){
+  const h=ctx().habits[i];if(h.done)return;
+  h.done=true;h.streak++;
+  const off=!inWin(h.window);
+  log(h,"done",{offWindow:off});
+  save();
+}
+
+function addMega(){
+  ctx().mega=ctx().mega||[];
+  ctx().mega.push({title:megaTitle.value,reward:+megaReward.value,done:false});
+  megaTitle.value=megaReward.value="";
+  megaModal.style.display="none";save();
+}
+
+function completeMega(i){
+  const m=ctx().mega[i];if(m.done)return;
+  m.done=true;data.coins+=m.reward;save();
+}
+
+/* ================= AI VERDICT ================= */
+function verdict(){
+  const c=ctx();
+  let v=[];
+  if(!c.history.length)return "No data yet. Execute.";
+  const hrs=c.history.filter(h=>h.status==="missed").map(h=>h.hour);
+  if(hrs.length)v.push(`In <strong>${c.name}</strong> mode, you fail at ${hrs[0]}:00.`);
+  return v.join("<br><br>");
+}
+
+/* ================= RENDER ================= */
+function render(){
+  renderIdentitySelect();
+  habitList.innerHTML="";
+  ctx().habits.forEach((h,i)=>{
+    habitList.innerHTML+=`
+      <div class="row">
+        <div>${h.name}</div>
+        <div class="check ${h.done?"done":""}" onclick="toggleHabit(${i})"></div>
+      </div>`;
+  });
+  aiPanel.innerHTML=verdict();
+}
+
+/* ================= SAVE ================= */
+async function save(){await userRef.set(data);render();}
+
+/* ================= UI ================= */
 function showTab(id){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-  event.target.classList.add("active");
   document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  event.target.classList.add("active");
 }
-
-/* === HABITS / MEGA / SPEND (UNCHANGED CORE) === */
-/* your tested logic preserved */
-
-/* === BACKUP === */
-function exportData(){
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="peak-2k26-backup.json";
-  a.click();
-}
-
-/* === WEEKLY REPORT === */
-function weeklyReport(){
-  if(!data.lastReport){
-    data.lastReport=TODAY;
-    save();return;
-  }
-  const diff=(new Date(TODAY)-new Date(data.lastReport))/86400000;
-  if(diff>=7){
-    data.lastReport=TODAY;
-    save();
-  }
-}
-
-/* === SAVE / RENDER === */
-async function save(){await userRef.update(data)}
-function renderAll(){
-  coins.textContent="Coins: "+data.coins;
-}
-function logout(){auth.signOut()}
+function openHabit(){habitModal.style.display="flex"}
+function openMega(){megaModal.style.display="flex"}
 </script>
 
 </body>
